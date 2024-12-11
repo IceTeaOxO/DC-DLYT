@@ -1,5 +1,6 @@
 # 使用方法
 1. 安裝套件
+系統需要先安裝ffmpeg
 ```
 pip install -r requirements.txt
 ```
