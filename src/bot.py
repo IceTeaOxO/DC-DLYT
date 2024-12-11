@@ -4,7 +4,9 @@ import json
 import logging
 import os
 from datetime import datetime
-
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # 設定日誌
 logging.basicConfig(
     level=logging.INFO,
@@ -47,5 +49,3 @@ async def on_command_error(ctx, error):
 def run_bot():
     bot.run(config['token'])
 
-if __name__ == '__main__':
-    run_bot()

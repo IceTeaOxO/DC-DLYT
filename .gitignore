@@ -1,2 +1,4 @@
 config/config.json
 config*
+log*
+__pycache__*

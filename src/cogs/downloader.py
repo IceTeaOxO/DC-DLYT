@@ -16,7 +16,7 @@ class Downloader(commands.Cog):
         self.bot = bot
         self.youtube_helper = YoutubeHelper(config['download_path'])
 
-    @commands.command(name='download')
+    @commands.command(name='dl', aliases=['download'])
     async def download(self, ctx, url: str, format_type: str = 'mp3'):
         """
         下載 YouTube 影片/音樂
