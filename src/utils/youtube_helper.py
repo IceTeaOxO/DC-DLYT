@@ -5,9 +5,18 @@ from typing import Dict, Optional
 
 class YoutubeHelper:
     def __init__(self, download_path: str):
-        self.download_path = download_path
+        # self.download_path = download_path
+        # self.current_downloads = {}
+        # 將相對路徑轉換為絕對路徑
+        self.download_path = os.path.abspath(download_path)
         self.current_downloads = {}
-
+        
+        # 確保下載目錄存在
+        try:
+            if not os.path.exists(self.download_path):
+                os.makedirs(self.download_path)
+        except Exception as e:
+            raise Exception(f"無法創建下載目錄 {self.download_path}: {str(e)}")
     async def get_video_info(self, url: str) -> Dict:
         ydl_opts = {
             'quiet': True,
@@ -23,10 +32,16 @@ class YoutubeHelper:
                 raise Exception(f"無法獲取影片資訊: {str(e)}")
 
     async def download(self, url: str, format_type: str = 'mp3', progress_hook=None) -> str:
+        # 再次確認目錄存在
+        if not os.path.exists(self.download_path):
+            os.makedirs(self.download_path)
         ydl_opts = {
             'format': 'bestaudio/best' if format_type == 'mp3' else 'best',
             'outtmpl': os.path.join(self.download_path, '%(title)s.%(ext)s'),
             'progress_hooks': [progress_hook] if progress_hook else [],
+            'keepvideo': True,
+            'noprogress': True,
+            'nooverwrites': True,
         }
 
         if format_type == 'mp3':

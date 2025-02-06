@@ -8,3 +8,9 @@ pip install -r requirements.txt
 3. 執行run.py
 4. 使用!dl youtube_url 來下載mp3
 5. 使用!dl youtube_url mp4 來下載mp4
+
+
+```
+docker build -t DC-DLYT .
+docker run -d --name DC-DLYT -v $(pwd)/downloads:/app/downloads DC-DLYT
+```
