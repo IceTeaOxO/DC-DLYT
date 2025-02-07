@@ -11,6 +11,6 @@ pip install -r requirements.txt
 
 
 ```
-docker build -t DC-DLYT .
-docker run -d --name DC-DLYT -v $(pwd)/downloads:/app/downloads DC-DLYT
+docker build -t dc-dlyt .
+docker run -d --name DC-DLYT -v $(pwd)/downloads:/app/downloads dc-dlyt
 ```
