@@ -16,8 +16,9 @@ COPY config/ ./config/
 COPY src/ ./src/
 COPY run.py .
 
-# 建立下載目錄
-RUN mkdir -p downloads
+# 建立下載目錄並設置正確的權限
+RUN mkdir -p /app/downloads && \
+    chmod -R 777 /app/downloads
 
 # 安裝 Python 套件
 RUN pip install --no-cache-dir -r requirements.txt

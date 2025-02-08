@@ -2,6 +2,7 @@ import yt_dlp
 import os
 import asyncio
 from typing import Dict, Optional
+import re
 
 class YoutubeHelper:
     def __init__(self, download_path: str):
@@ -13,10 +14,20 @@ class YoutubeHelper:
         
         # 確保下載目錄存在
         try:
-            if not os.path.exists(self.download_path):
-                os.makedirs(self.download_path)
+            os.makedirs(self.download_path, exist_ok=True)
+            os.chmod(self.download_path, 0o777)
         except Exception as e:
             raise Exception(f"無法創建下載目錄 {self.download_path}: {str(e)}")
+        
+    def sanitize_filename(self, filename: str) -> str:
+        # 移除或替換不安全的字符
+        filename = re.sub(r'[\\/*?:"<>|⧸/]', '_', filename)  # 修改這行，將所有特殊字符替換為底線
+        # 移除多餘的空格
+        filename = ' '.join(filename.split())
+        # 確保文件名不以點或空格開始或結束
+        filename = filename.strip('. ')
+        return filename
+    
     async def get_video_info(self, url: str) -> Dict:
         ydl_opts = {
             'quiet': True,
@@ -35,36 +46,47 @@ class YoutubeHelper:
         # 再次確認目錄存在
         if not os.path.exists(self.download_path):
             os.makedirs(self.download_path)
-        ydl_opts = {
-            'format': 'bestaudio/best' if format_type == 'mp3' else 'best',
-            'outtmpl': os.path.join(self.download_path, '%(title)s.%(ext)s'),
-            'progress_hooks': [progress_hook] if progress_hook else [],
-            'keepvideo': True,
-            'noprogress': True,
-            'nooverwrites': True,
-        }
+        try:
+            with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+                    info = ydl.extract_info(url, download=False)
+                    safe_title = self.sanitize_filename(info['title'])
 
-        if format_type == 'mp3':
-            ydl_opts.update({
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                }],
-            })
+            # 設置下載選項，使用安全的文件名
+            ydl_opts = {
+                'format': 'bestaudio/best' if format_type == 'mp3' else 'best',
+                'outtmpl': os.path.join(self.download_path, f'{safe_title}.%(ext)s'),
+                'progress_hooks': [progress_hook] if progress_hook else [],
+                'keepvideo': True,
+                'noprogress': True,
+                'nooverwrites': True,
+            }
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            try:
-                info = await asyncio.get_event_loop().run_in_executor(
-                    None, lambda: ydl.extract_info(url, download=True)
-                )
-                if format_type == 'mp3':
-                    filename = os.path.join(self.download_path, f"{info['title']}.mp3")
-                else:
-                    filename = os.path.join(self.download_path, f"{info['title']}.mp4")
-                return filename
-            except Exception as e:
-                raise Exception(f"下載失敗: {str(e)}")
+            if format_type == 'mp3':
+                ydl_opts.update({
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '192',
+                    }],
+                })
+
+            # 執行下載
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+            
+            # 構建最終文件名
+            final_filename = os.path.join(self.download_path, f"{safe_title}.{format_type}")
+            
+            # 等待文件出現（最多等待5秒）
+            for _ in range(50):
+                if os.path.exists(final_filename):
+                    return final_filename
+                await asyncio.sleep(0.1)
+            
+                raise Exception(f"無法找到下載的文件: {final_filename}")
+        
+        except Exception as e:
+            raise Exception(f"下載失敗: {str(e)}")
 
     def is_playlist(self, url: str) -> bool:
         return 'list=' in url
